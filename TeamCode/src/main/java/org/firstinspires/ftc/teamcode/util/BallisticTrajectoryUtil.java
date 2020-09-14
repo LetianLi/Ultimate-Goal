@@ -137,30 +137,18 @@ public class BallisticTrajectoryUtil {
         }
 
         public Vector3 plus(Vector3 other) {
-//            this.x += other.x;
-//            this.y += other.y;
-//            this.z += other.z;
             return new Vector3(this.x + other.x, this.y + other.y, this.z + other.z);
         }
 
         public Vector3 minus(Vector3 other) {
-//            this.x -= other.x;
-//            this.y -= other.y;
-//            this.z -= other.z;
             return new Vector3(this.x - other.x, this.y - other.y, this.z - other.z);
         }
 
         public Vector3 times(double scalar) {
-//            this.x *= scalar;
-//            this.y *= scalar;
-//            this.z *= scalar;
             return new Vector3(this.x * scalar, this.y * scalar, this.z * scalar);
         }
 
         public Vector3 div(double scalar) {
-//            this.x /= scalar;
-//            this.y /= scalar;
-//            this.z /= scalar;
             return new Vector3(this.x/scalar, this.y/scalar, this.z/scalar);
         }
 
