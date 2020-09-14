@@ -67,15 +67,15 @@ public class BallisticTrajectoryUtil {
      * @param initial_height distance above flat terrain
      * @return maximum range
      */
-    public static double ballistic_range(float speed, float gravity, float initial_height) {
+    public static double ballistic_range(double speed, double gravity, double initial_height) {
 
         assertion(speed > 0 && gravity > 0 && initial_height >= 0, "fts.ballistic_range called with invalid data");
 
         // Derivation
-        //   (1) x = speed * time * cos O
-        //   (2) y = initial_height + (speed * time * sin O) - (.5 * gravity*time*time)
-        //   (3) via quadratic: t = (speed*sin O)/gravity + sqrt(speed*speed*sin O + 2*gravity*initial_height)/gravity    [ignore smaller root]
-        //   (4) solution: range = x = (speed*cos O)/gravity * sqrt(speed*speed*sin O + 2*gravity*initial_height)    [plug t back into x=speed*time*cos O]
+        //   (1) x = speed * time * cos θ
+        //   (2) y = initial_height + (speed * time * sin θ) - (.5 * gravity*time*time)
+        //   (3) via quadratic: t = (speed*sin θ)/gravity + sqrt(speed*speed*sin θ + 2*gravity*initial_height)/gravity    [ignore smaller root]
+        //   (4) solution: range = x = (speed*cos θ)/gravity * sqrt(speed*speed*sin θ + 2*gravity*initial_height)    [plug t back into x=speed*time*cos θ]
         double angle = Math.toRadians(45); // no air resistance, so 45 degrees provides maximum range
         double cos = Math.cos(angle);
         double sin = Math.sin(angle);
@@ -94,7 +94,7 @@ public class BallisticTrajectoryUtil {
      * @param s1 firing solution (high angle) reference
      * @return number of unique solutions found: 0, 1, or 2.
      */
-    public static int solve_ballistic_arc(Vector3 proj_pos, float proj_speed, Vector3 target, float gravity, Vector3 s0, Vector3 s1) {
+    public static int solve_ballistic_arc(Vector3 proj_pos, double proj_speed, Vector3 target, double gravity, Vector3 s0, Vector3 s1) {
 
         assertion(!proj_pos.equals(target) && proj_speed > 0 && gravity > 0, "fts.solve_ballistic_arc called with invalid data");
 
@@ -103,20 +103,20 @@ public class BallisticTrajectoryUtil {
         s1.set(Vector3.zero);
 
         // Derivation
-        //   (1) x = v*t*cos O
-        //   (2) y = v*t*sin O - .5*g*t^2
+        //   (1) x = v*t*cos θ
+        //   (2) y = v*t*sin θ - .5*g*t^2
         //
-        //   (3) t = x/(cos O*v)                                        [solve t from (1)]
-        //   (4) y = v*x*sin O/(cos O * v) - .5*g*x^2/(cos^2 O*v^2)     [plug t into y=...]
-        //   (5) y = x*tan O - g*x^2/(2*v^2*cos^2 O)                    [reduce; cos/sin = tan]
-        //   (6) y = x*tan O - (g*x^2/(2*v^2))*(1+tan^2 O)              [reduce; 1+tan O = 1/cos^2 O]
-        //   (7) 0 = ((-g*x^2)/(2*v^2))*tan^2 O + x*tan O - (g*x^2)/(2*v^2) - y    [re-arrange]
-        //   Quadratic! a*p^2 + b*p + c where p = tan O
+        //   (3) t = x/(cos θ*v)                                        [solve t from (1)]
+        //   (4) y = v*x*sin θ/(cos θ * v) - .5*g*x^2/(cos^2 θ*v^2)     [plug t into y=...]
+        //   (5) y = x*tan θ - g*x^2/(2*v^2*cos^2 θ)                    [reduce; cos/sin = tan]
+        //   (6) y = x*tan θ - (g*x^2/(2*v^2))*(1+tan^2 θ)              [reduce; 1+tan θ = 1/cos^2 θ]
+        //   (7) 0 = ((-g*x^2)/(2*v^2))*tan^2 θ + x*tan θ - (g*x^2)/(2*v^2) - y    [re-arrange]
+        //   Quadratic! a*p^2 + b*p + c where p = tan θ
         //
         //   (8) let gxv = -g*x*x/(2*v*v)
         //   (9) p = (-x +- sqrt(x*x - 4gxv*(gxv - y)))/2*gxv           [quadratic formula]
         //   (10) p = (v^2 +- sqrt(v^4 - g(g*x^2 + 2*y*v^2)))/gx        [multiply top/bottom by -2*v*v/x; move 4*v^4/x^2 into root]
-        //   (11) O = atan(p)
+        //   (11) θ = atan(p)
 
         Vector3 diff = target.minus(proj_pos);
         Vector3 diffXZ = new Vector3(diff.x, 0f, diff.z);
@@ -235,9 +235,9 @@ public class BallisticTrajectoryUtil {
                 continue;
 
             solutions[numSolutions].set(
-                    (float)((H+P*t)/t),
-                    (float)((K+Q*t-L*t*t)/ t),
-                    (float)((J+R*t)/t));
+                    (H+P*t)/t,
+                    (K+Q*t-L*t*t)/ t,
+                    (J+R*t)/t);
             numSolutions++;
         }
 
@@ -308,7 +308,7 @@ public class BallisticTrajectoryUtil {
      * @param impact_point point where moving target will be hit reference
      * @return true if a valid solution was found
      */
-    public static boolean solve_ballistic_arc_lateral(Vector3 proj_pos, float lateral_speed, Vector3 target, Vector3 target_velocity, float max_height_offset, Vector3 fire_velocity, DoubleObj gravity, Vector3 impact_point) {
+    public static boolean solve_ballistic_arc_lateral(Vector3 proj_pos, double lateral_speed, Vector3 target, Vector3 target_velocity, double max_height_offset, Vector3 fire_velocity, DoubleObj gravity, Vector3 impact_point) {
 
         assertion(!proj_pos.equals(target) && lateral_speed > 0, "fts.solve_ballistic_arc_lateral called with invalid data");
 
