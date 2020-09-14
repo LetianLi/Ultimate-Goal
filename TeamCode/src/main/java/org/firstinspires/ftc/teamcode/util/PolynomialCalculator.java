@@ -39,6 +39,8 @@ package org.firstinspires.ftc.teamcode.util;
 //      https://github.com/erich666/GraphicsGems/blob/240a34f2ad3fa577ef57be74920db6c4b00605e4/gems/Roots3And4.c
 //
 
+import com.acmerobotics.roadrunner.geometry.Vector2d;
+
 import java.util.Comparator;
 
 public class PolynomialCalculator {
@@ -97,15 +99,14 @@ public class PolynomialCalculator {
     }
 
     /**
-     * Class to replace Unity3d's Vector3
+     * Class to replace Unity3d's Vector3.
+     * Has Pose2d support
      * @link (https://docs.unity3d.com/ScriptReference/Vector3.html)
-     * (x, y, z) = (left-right, down-up, back-forward)
-     * xz is the ground plane. y is the height.
      */
     public static class Vector3 {
-        public double x;
-        public double y;
-        public double z;
+        public double x; // Left-Right
+        public double y; // Down-Up
+        public double z; // Back-Forward
         public static final Vector3
                 back    = new Vector3(0 , 0 , -1),
                 down    = new Vector3(0 , -1, 0 ),
@@ -115,6 +116,12 @@ public class PolynomialCalculator {
                 right   = new Vector3(1 , 0 , 0 ),
                 up      = new Vector3(0 , 1 , 0 ),
                 zero    = new Vector3(0 , 0 , 0 );
+
+        public Vector3(Vector2d vector2d, double height) {
+            this.z = vector2d.getX();
+            this.x = -vector2d.getY();
+            this.y = height;
+        }
 
         public Vector3(double x, double y, double z) {
             this.x = x;
@@ -165,6 +172,26 @@ public class PolynomialCalculator {
         public Vector3 getNormalized() {
             double magnitude = getMagnitude();
             return this.div(magnitude);
+        }
+
+        /**
+         * @return the Vector2d on the ground plane (converted into RR coord system)
+         */
+        public Vector2d getGroundVector2d() {
+            return new Vector2d(this.z, -this.x);
+        }
+
+        /**
+         * @return the Vector2d between the ground plane and the height (converted into RR coord system)
+         */
+        public Vector2d getSkyVector2d() {
+            return new Vector2d(getGroundVector2d().norm(), this.y);
+        }
+
+        public static double[] getTargetHeadings(Vector3 vector3) {
+            double groundHeading = vector3.getGroundVector2d().angle();
+            double skyHeading = vector3.getSkyVector2d().angle();
+            return new double[]{groundHeading, skyHeading};
         }
 
         public boolean equals(Vector3 comparison) {

@@ -85,7 +85,7 @@ public class BallisticTrajectoryUtil {
     }
 
     /**
-     * Solve firing angles for a ballistic projectile with speed and gravity to hit a fixed position.
+     * Solve firing angles for a ballistic projectile with projectile speed and gravity to hit a fixed position.
      * @param proj_pos point projectile will fire from
      * @param proj_speed scalar speed of projectile
      * @param target point projectile is trying to hit
@@ -149,7 +149,7 @@ public class BallisticTrajectoryUtil {
     }
 
     /**
-     * Solve firing angles for a ballistic projectile with speed and gravity to hit a target moving with constant, linear velocity.
+     * Solve firing angles for a ballistic projectile with projectile speed and gravity to hit a target moving with constant, linear velocity.
      * @param proj_pos point projectile will fire from
      * @param proj_speed scalar speed of projectile
      * @param target_pos point projectile is trying to hit
@@ -238,6 +238,110 @@ public class BallisticTrajectoryUtil {
                     (H+P*t)/t,
                     (K+Q*t-L*t*t)/ t,
                     (J+R*t)/t);
+            numSolutions++;
+        }
+
+        // Write out solutions
+        if (numSolutions > 0)   s0.set(solutions[0]);
+        if (numSolutions > 1)   s1.set(solutions[1]);
+
+        return numSolutions;
+    }
+
+    /**
+     * Solve firing angles for a ballistic projectile with robot speed, projectile speed, and gravity to hit a target moving with constant, linear velocity.
+     * @param launcher_velocity velocity of the robot/launcher
+     * @param proj_pos point projectile will fire from
+     * @param proj_speed scalar speed of projectile
+     * @param target_pos point projectile is trying to hit
+     * @param target_velocity velocity of target
+     * @param gravity force of gravity, positive down
+     * @param s0 firing solution (fastest time impact) reference
+     * @param s1 firing solution (next impact) reference
+     * -param s2 firing solution (next impact) reference?
+     * -param s3 firing solution (next impact) reference?
+     * @return number of unique solutions found: 0, 1, 2, 3, or 4.
+     */
+    public static int solve_ballistic_arc(Vector3 launcher_velocity, Vector3 proj_pos, double proj_speed, Vector3 target_pos, Vector3 target_velocity, double gravity, Vector3 s0, Vector3 s1) {
+
+        // Initialize output parameters
+        s0.set(Vector3.zero);
+        s1.set(Vector3.zero);
+
+        // Derivation
+        //
+        //  For full derivation see: blog.forrestthewoods.com
+        //  Here is an abbreviated version.
+        //
+        //  Four equations, four unknowns (solution.x, solution.y, solution.z, time):
+        //
+        //  (1) proj_pos.x + solution.x*time = target_pos.x + target_vel.x*time
+        //  (2) proj_pos.y + solution.y*time + .5*G*t = target_pos.y + target_vel.y*time
+        //  (3) proj_pos.z + solution.z*time = target_pos.z + target_vel.z*time
+        //  (4) proj_speed^2 = solution.x^2 + solution.y^2 + solution.z^2
+        //
+        //  (5) Solve for solution.x and solution.z in equations (1) and (3)
+        //  (6) Square solution.x and solution.z from (5)
+        //  (7) Solve solution.y^2 by plugging (6) into (4)
+        //  (8) Solve solution.y by rearranging (2)
+        //  (9) Square (8)
+        //  (10) Set (8) = (7). All solution.xyz terms should be gone. Only time remains.
+        //  (11) Rearrange 10. It will be of the form a*^4 + b*t^3 + c*t^2 + d*t * e. This is a quartic.
+        //  (12) Solve the quartic using SolveQuartic.
+        //  (13) If there are no positive, real roots there is no solution.
+        //  (14) Each positive, real root is one valid solution
+        //  (15) Plug each time value into (1) (2) and (3) to calculate solution.xyz
+        //  (16) The end.
+
+        double G = gravity;
+
+        double U = launcher_velocity.x;
+        double V = launcher_velocity.y;
+        double W = launcher_velocity.z;
+        double A = proj_pos.x;
+        double B = proj_pos.y;
+        double C = proj_pos.z;
+        double M = target_pos.x;
+        double N = target_pos.y;
+        double O = target_pos.z;
+        double P = target_velocity.x;
+        double Q = target_velocity.y;
+        double R = target_velocity.z;
+        double S = proj_speed;
+
+        double H = M - A;
+        double J = O - C;
+        double K = N - B;
+        double L = -.5f * G;
+
+        // Quartic Coefficients
+        double c0 = L*L;
+        double c1 = 2*Q*L;
+        double c2 = Q*Q + 2*K*L - S*S + P*P + R*R;
+        double c3 = 2*K*Q + 2*H*P + 2*J*R;
+        double c4 = K*K + H*H + J*J;
+
+        // Solve quartic
+        DoubleObj[] times = new DoubleObj[4];
+        int numTimes = SolveQuartic(c0, c1, c2, c3, c4, times[0], times[1], times[2], times[3]);
+
+        // Sort so faster collision is found first
+        Arrays.sort(times, new DoubleObj.sorter());
+
+        // Plug quartic solutions into base equations
+        // There should never be more than 2 positive, real roots.
+        Vector3[] solutions = new Vector3[2];
+        int numSolutions = 0;
+
+        for (int i = 0; i < numTimes && numSolutions < 2; i++) {
+            double t = times[i].get();
+            if (t <= 0)
+                continue;
+
+            solutions[numSolutions].set(
+                    (H+P*t)/t - U,
+                    (K+Q*t-L*t*t)/t - V,
+                    (J+R*t)/t - W);
             numSolutions++;
         }
 
