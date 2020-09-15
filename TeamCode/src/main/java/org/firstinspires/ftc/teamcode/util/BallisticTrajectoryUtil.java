@@ -52,12 +52,12 @@ public class BallisticTrajectoryUtil {
 
     /**
      * Method to replace Debug.assert()
-     * @param ifFalse when this is false
+     * @param condition where everything is fine
      * @param debugText Log error with this text
      */
-    public static void assertion(boolean ifFalse, String debugText) {
+    public static void assertion(boolean condition, String debugText) {
         // Handling these cases is up to your project's coding standards
-        if (!ifFalse) Log.e(tag, debugText);
+        if (!condition) Log.e(tag, debugText);
     }
 
     /**
@@ -351,6 +351,45 @@ public class BallisticTrajectoryUtil {
 
         return numSolutions;
     }
+
+    public static double solve_ballistic_arc_velocity(double angle, Vector3 proj_pos, Vector3 target, double gravity) {
+        assertion(!proj_pos.equals(target) && gravity > 0, "fts.solve_ballistic_arc_velocity called with invalid data");
+
+        double caseFail = Double.NaN;
+
+        // Derivation
+        //   (1) x = v*t*cos θ
+        //   (2) y = v*t*sin θ - .5*g*t^2
+        //
+        //   (3) t = x/(cos θ * v)                                        [solve t from (1)]
+        //   (4) y = v*x*sin θ/(cos θ * v) - .5*g*x^2/(cos^2 θ * v^2)     [plug t into y=...]
+        //   (5) y = x*tan θ - g*x^2/(2*v^2*cos^2 θ)                      [reduce; cos/sin = tan]
+        //   (6) y - x*tan θ = -g*x^2/(2*v^2*cos^2 θ)                     [re-arrange]
+        //   (7) (y - x*tan θ)(2*v^2*cos^2 θ) = -g*x^2                    [multiply both sides by 2*v^2*cos^2 θ]
+        //   (8) 2*v^2*cos^2 θ = -g*x^2/(y - x*tan θ)                     [divide both sides by y - x*tan θ]
+        //   (9) v^2 = -g*x^2/(2(y - x*tan θ)*cos^2 θ)                    [divide both sides by 2*cos^2 θ]
+        //   (10) v = sqrt(-g*x^2/(2(y - x*tan θ)*cos^2 θ))               [square root both sides]
+        //   (11) v = x * sqrt(-g/(2*(y - x*tan θ)*cos^2 θ))              [simplify]
+
+        Vector3 diff = target.minus(proj_pos);
+        Vector3 diffXZ = new Vector3(diff.x, 0f, diff.z);
+        double groundDist = diffXZ.getMagnitude();
+        double height = diff.y;
+
+        // Test for dividing by 0
+        double sq_denom = 2*(height - groundDist*Math.tan(angle))*(Math.cos(angle)*Math.cos(angle));
+        if (-1e-6 < sq_denom && sq_denom < 1e-6) return caseFail;
+
+        // Test for square rooting by negative
+        double sq = -gravity/sq_denom;
+        if (sq < 0) return caseFail;
+
+        double velocity = groundDist * Math.sqrt(sq);
+
+        return velocity;
+    }
+
+
 
 
 
