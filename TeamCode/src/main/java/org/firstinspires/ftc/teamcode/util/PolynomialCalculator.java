@@ -197,6 +197,14 @@ public class PolynomialCalculator {
         public boolean equals(Vector3 comparison) {
             return this.x == comparison.x && this.y == comparison.y && this.z == comparison.z;
         }
+
+        public String toPoseString() {
+            return String.format("(x: %.3f, y: %.3f, z: %.3f)", this.z, -this.x, this.y);
+        }
+
+        public String toAngleString() {
+            return String.format("(%.3f°, %.3f°)", getGroundVector2d().angle(), getSkyVector2d().angle());
+        }
     }
 
     /**

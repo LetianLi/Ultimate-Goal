@@ -43,6 +43,9 @@ package org.firstinspires.ftc.teamcode.util;
 
 import android.util.Log;
 
+import com.acmerobotics.roadrunner.geometry.Pose2d;
+import com.acmerobotics.roadrunner.geometry.Vector2d;
+
 import java.util.Arrays;
 
 import static org.firstinspires.ftc.teamcode.util.PolynomialCalculator.*;
@@ -58,6 +61,33 @@ public class BallisticTrajectoryUtil {
     public static void assertion(boolean condition, String debugText) {
         // Handling these cases is up to your project's coding standards
         if (!condition) Log.e(tag, debugText);
+    }
+
+    public static Pose2d robotToFieldVelocity(Pose2d robotPose, Pose2d robotVel) {
+        return new Pose2d(robotVel.vec().rotated(-robotPose.getHeading()), robotVel.getHeading());
+    }
+
+    /**
+     * @param point point in question relative to the robotPose
+     * @param robotPose position of the robot itself
+     * @param robotVel velocity of the robot itself
+     * @return The x,y,z field vector velocity at the point
+     */
+    public static Vector3 robotToFieldVelocityVector (Vector2d point, Pose2d robotPose, Pose2d robotVel) {
+        Vector2d fieldVelocity = robotToFieldVelocity(robotPose, robotVel).vec();
+        Vector2d tangentialVel = getTangentialVelocity(point, robotVel.getHeading(), robotPose.getHeading());
+        return new Vector3(new Vector2d(
+                fieldVelocity.getX() + tangentialVel.getX(),
+                fieldVelocity.getY() + tangentialVel.getY()),
+                0);
+    }
+
+    public static Vector2d getRelativeTangentialVelocity(Vector2d point, double angularVel) {
+        return new Vector2d(0, angularVel*point.norm()).rotated(point.angle());
+    }
+
+    public static Vector2d getTangentialVelocity(Vector2d point, double angularVel, double robotHeading) {
+        return getRelativeTangentialVelocity(point, angularVel).rotated(-robotHeading);
     }
 
     /**
@@ -250,19 +280,17 @@ public class BallisticTrajectoryUtil {
 
     /**
      * Solve firing angles for a ballistic projectile with robot speed, projectile speed, and gravity to hit a target moving with constant, linear velocity.
-     * @param launcher_velocity velocity of the robot/launcher
-     * @param proj_pos point projectile will fire from
-     * @param proj_speed scalar speed of projectile
+     * @param launcher_velocity instantaneous velocity of the robot/launcher
+     * @param launcher_pos point launcher will fire the projectile from
+     * @param launch_speed scalar speed of projectile at launch
      * @param target_pos point projectile is trying to hit
      * @param target_velocity velocity of target
      * @param gravity force of gravity, positive down
      * @param s0 firing solution (fastest time impact) reference
      * @param s1 firing solution (next impact) reference
-     * -param s2 firing solution (next impact) reference?
-     * -param s3 firing solution (next impact) reference?
      * @return number of unique solutions found: 0, 1, 2, 3, or 4.
      */
-    public static int solve_ballistic_arc(Vector3 launcher_velocity, Vector3 proj_pos, double proj_speed, Vector3 target_pos, Vector3 target_velocity, double gravity, Vector3 s0, Vector3 s1) {
+    public static int solve_ballistic_arc(Vector3 launcher_velocity, Vector3 launcher_pos, double launch_speed, Vector3 target_pos, Vector3 target_velocity, double gravity, Vector3 s0, Vector3 s1) {
 
         // Initialize output parameters
         s0.set(Vector3.zero);
@@ -275,10 +303,10 @@ public class BallisticTrajectoryUtil {
         //
         //  Four equations, four unknowns (solution.x, solution.y, solution.z, time):
         //
-        //  (1) proj_pos.x + solution.x*time = target_pos.x + target_vel.x*time
-        //  (2) proj_pos.y + solution.y*time + .5*G*t = target_pos.y + target_vel.y*time
-        //  (3) proj_pos.z + solution.z*time = target_pos.z + target_vel.z*time
-        //  (4) proj_speed^2 = solution.x^2 + solution.y^2 + solution.z^2
+        //  (1) launcher_pos.x + solution.x*time = target_pos.x + target_vel.x*time
+        //  (2) launcher_pos.y + solution.y*time + .5*G*t = target_pos.y + target_vel.y*time
+        //  (3) launcher_pos.z + solution.z*time = target_pos.z + target_vel.z*time
+        //  (4) launch_speed^2 = solution.x^2 + solution.y^2 + solution.z^2
         //
         //  (5) Solve for solution.x and solution.z in equations (1) and (3)
         //  (6) Square solution.x and solution.z from (5)
@@ -298,16 +326,16 @@ public class BallisticTrajectoryUtil {
         double U = launcher_velocity.x;
         double V = launcher_velocity.y;
         double W = launcher_velocity.z;
-        double A = proj_pos.x;
-        double B = proj_pos.y;
-        double C = proj_pos.z;
+        double A = launcher_pos.x;
+        double B = launcher_pos.y;
+        double C = launcher_pos.z;
         double M = target_pos.x;
         double N = target_pos.y;
         double O = target_pos.z;
         double P = target_velocity.x;
         double Q = target_velocity.y;
         double R = target_velocity.z;
-        double S = proj_speed;
+        double S = launch_speed;
 
         double H = M - A;
         double J = O - C;

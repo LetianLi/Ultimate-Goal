@@ -2,7 +2,10 @@ package org.firstinspires.ftc.teamcode.drive;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.control.PIDCoefficients;
+import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.acmerobotics.roadrunner.trajectory.constraints.DriveConstraints;
+
+import org.firstinspires.ftc.teamcode.util.PolynomialCalculator.Vector3;
 
 /*
  * Constants shared between multiple drive types.
@@ -52,6 +55,14 @@ public class DriveConstants {
     public static double kV = 1.0 / rpmToVelocity(MAX_RPM);
     public static double kA = 0;
     public static double kStatic = 0;
+
+    public static Vector2d relativeLauncherPos = new Vector2d(5, 0);
+    public static double relativeLauncherHeight = 5;
+    public static double launchSpeed = 30; // in/sec^2
+    public static double gravity = 386.088582677165; // in/sec^2
+
+    public static Vector3 blueHighGoal = new Vector3(new Vector2d(70.75, 6 + 18.5 + 23.0/2), 33.0 + 5.0/2);
+    public static Vector3 redHighGoal  = new Vector3(new Vector2d(70.75, -(6 + 18.5 + 23.0/2)), 33.0 + 5.0/2);
 
     /*
      * These values are used to generate the trajectories for you robot. To ensure proper operation,
